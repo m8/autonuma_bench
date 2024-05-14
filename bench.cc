@@ -97,16 +97,12 @@ int main(int argc, char* argv[]) {
     cpu_set_t cpuset;
     pthread_attr_t attr;
 
-
     int cpu = sched_getcpu();
     printf("Running on thread: %d\n", cpu);
     for (auto page: pages){
         volatile char q = page.data[0];
 		asm volatile("" : : : "memory");
     }
-
-
-
 
     pthread_attr_init(&attr);
     CPU_ZERO(&cpuset);
