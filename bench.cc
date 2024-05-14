@@ -8,6 +8,10 @@
 #include <cstdlib>
 #include <unistd.h>
 
+#define MPOL_F_STATIC_NODES	(1 << 15)
+#define MPOL_F_RELATIVE_NODES	(1 << 14)
+#define NUMA_NODES_AVAILABLE 4
+
 unsigned long num_pages = 256 * 1024;
 int read_ratio = 100; 
 int write_ratio = 0;
@@ -87,10 +91,9 @@ int main(int argc, char* argv[]) {
     check_autonuma();
     drop_caches();
 
-    cpu_set_t  mask;
-    CPU_ZERO(&mask);
-    CPU_SET(0, &mask);
-    int result = sched_setaffinity(0, sizeof(mask), &mask);
+    // Allocate memory from the first numa node
+    unsigned long nodemask = 1ul << 0;
+    set_mempolicy(MPOL_BIND | MPOL_F_STATIC_NODES, &nodemask, NUMA_NODES_AVAILABLE + 1);
 
     std::vector<Page> pages(num_pages);
     pthread_t bench_thread;
@@ -103,6 +106,9 @@ int main(int argc, char* argv[]) {
         volatile char q = page.data[0];
 		asm volatile("" : : : "memory");
     }
+
+    // Go back to default policy
+    set_mempolicy(MPOL_DEFAULT, NULL, 0);
 
     pthread_attr_init(&attr);
     CPU_ZERO(&cpuset);
